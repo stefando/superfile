@@ -46,6 +46,7 @@ var (
 	Terminal        = "\ue795"     // Printable Rune : ""
 	Pinned          = "\U000f0403" // Printable Rune : "󰐃"
 	Disk            = "\U000f11f0" // Printable Rune : "󱇰"
+	GitBranch       = "\ue725"     // Printable Rune : ""
 
 )
 

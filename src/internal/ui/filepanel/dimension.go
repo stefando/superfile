@@ -53,5 +53,18 @@ func (m *Model) PanelElementHeight() int {
 	if m.NeedRenderHeaders() {
 		headerHeight = ColumnHeaderHeight
 	}
-	return m.GetMainPanelHeight() - contentPadding - headerHeight
+	return m.GetMainPanelHeight() - contentPadding - headerHeight - m.extraTopBarHeight()
+}
+
+// gitViewActive reports whether the top bar shows the two-line git view.
+func (m *Model) gitViewActive() bool {
+	return m.gitAltView && m.gitRoot != ""
+}
+
+// extraTopBarHeight is the number of top bar lines beyond the usual one.
+func (m *Model) extraTopBarHeight() int {
+	if m.gitViewActive() {
+		return 1
+	}
+	return 0
 }

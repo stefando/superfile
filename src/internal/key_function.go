@@ -212,6 +212,10 @@ func (m *model) filePanelSelectModeKey(msg string) tea.Cmd {
 		m.copyMultipleItem(true)
 	case slices.Contains(common.Hotkeys.CopyPath, msg):
 		m.copyPath()
+	case slices.Contains(common.Hotkeys.CopyPathRelativeToGitRoot, msg):
+		m.copyPathRelativeToGitRoot()
+	case slices.Contains(common.Hotkeys.ToggleGitView, msg):
+		m.getFocusedFilePanel().ToggleGitView()
 	case slices.Contains(common.Hotkeys.FilePanelSelectAllItem, msg):
 		panel.SelectAllItem()
 	}
@@ -238,6 +242,10 @@ func (m *model) filePanelNormalModeKey(msg string) tea.Cmd {
 		m.searchBarFocus()
 	case slices.Contains(common.Hotkeys.CopyPath, msg):
 		m.copyPath()
+	case slices.Contains(common.Hotkeys.CopyPathRelativeToGitRoot, msg):
+		m.copyPathRelativeToGitRoot()
+	case slices.Contains(common.Hotkeys.ToggleGitView, msg):
+		m.getFocusedFilePanel().ToggleGitView()
 	case slices.Contains(common.Hotkeys.CopyPWD, msg):
 		m.copyPWD()
 	}

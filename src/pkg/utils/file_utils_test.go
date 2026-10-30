@@ -498,3 +498,25 @@ func TestReadFileContentBOMHandling(t *testing.T) {
 	assert.NotContains(t, result, "\uFEFF",
 		"BOM character should be removed from output: %q", result)
 }
+
+func TestContractHome(t *testing.T) {
+	sep := string(filepath.Separator)
+	home := filepath.Join(sep, "home", "user")
+	tests := []struct {
+		name string
+		path string
+		home string
+		want string
+	}{
+		{"home itself", home, home, "~"},
+		{"below home", filepath.Join(home, "a", "b"), home, filepath.Join("~", "a", "b")},
+		{"sibling with same prefix", home + "x", home, home + "x"},
+		{"outside home", filepath.Join(sep, "tmp"), home, filepath.Join(sep, "tmp")},
+		{"empty home", home, "", home},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, ContractHome(tt.path, tt.home))
+		})
+	}
+}

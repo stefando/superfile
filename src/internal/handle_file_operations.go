@@ -15,6 +15,7 @@ import (
 	"github.com/yorukot/superfile/src/internal/trash"
 	"github.com/yorukot/superfile/src/internal/ui/filepanel"
 	"github.com/yorukot/superfile/src/internal/ui/spferror"
+	"github.com/yorukot/superfile/src/pkg/gitinfo"
 	"github.com/yorukot/superfile/src/pkg/utils"
 
 	"github.com/yorukot/superfile/src/internal/common"
@@ -587,6 +588,31 @@ func (m *model) copyPathText() string {
 	}
 
 	return m.getSelectedOrFocusedPaths(panel)
+}
+
+// copyPathRelativeToGitRoot copies the selected or focused paths relative to the git root.
+// It does nothing when the focused panel is not inside a git repo.
+// TODO: This is also an IO operations, do it via tea.Cmd
+func (m *model) copyPathRelativeToGitRoot() {
+	panel := m.getFocusedFilePanel()
+	if panel.Empty() {
+		return
+	}
+	if _, ok := gitinfo.FindRoot(panel.Location); !ok {
+		slog.Debug("Not in a git repo, skipping relative path copy", "location", panel.Location)
+		return
+	}
+
+	paths := strings.Split(m.getSelectedOrFocusedPaths(panel), "\n")
+	for i, p := range paths {
+		if rel, ok := gitinfo.RelToRoot(p); ok {
+			paths[i] = rel
+		}
+	}
+
+	if err := m.writeClipboard(strings.Join(paths, "\n")); err != nil {
+		slog.Error("Error while copy path relative to git root", "error", err)
+	}
 }
 
 // TODO: This is also an IO operations, do it via tea.Cmd

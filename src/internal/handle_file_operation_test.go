@@ -537,3 +537,61 @@ func TestRunFileProcessorMutex(t *testing.T) {
 			assert.True(t, m.mutexErrorModal.TryLock())
 		})
 }
+
+func TestCopyPathRelativeToGitRoot(t *testing.T) {
+	repo := filepath.Join(t.TempDir(), "repo")
+	sub := filepath.Join(repo, "sub")
+	file1 := filepath.Join(sub, "file1.txt")
+	file2 := filepath.Join(sub, "file2.txt")
+	dir1 := filepath.Join(sub, "dir1")
+	plain := t.TempDir()
+	plainFile := filepath.Join(plain, "file1.txt")
+
+	utils.SetupDirectories(t, filepath.Join(repo, ".git"), sub, dir1)
+	utils.SetupFiles(t, file1, file2, plainFile)
+
+	var copiedText string
+	newModel := func(dir string) *model {
+		copiedText = ""
+		m := defaultTestModel(dir)
+		m.clipboardWriter = func(text string) error {
+			copiedText = text
+			return nil
+		}
+		return m
+	}
+	key := utils.TeaRuneKeyMsg(common.Hotkeys.CopyPathRelativeToGitRoot[0])
+
+	t.Run("Browser Mode Focused File", func(t *testing.T) {
+		m := newModel(sub)
+		setFilePanelSelectedItemByLocation(t, m.getFocusedFilePanel(), file1)
+		TeaUpdate(m, key)
+		assert.Equal(t, filepath.Join("sub", "file1.txt"), copiedText)
+	})
+
+	t.Run("Browser Mode Focused Directory", func(t *testing.T) {
+		m := newModel(sub)
+		setFilePanelSelectedItemByLocation(t, m.getFocusedFilePanel(), dir1)
+		TeaUpdate(m, key)
+		assert.Equal(t, filepath.Join("sub", "dir1"), copiedText)
+	})
+
+	t.Run("Select Mode Selected Items", func(t *testing.T) {
+		m := newModel(sub)
+		panel := m.getFocusedFilePanel()
+		panel.ChangeFilePanelMode()
+		panel.SetSelected(file2)
+		panel.SetSelected(file1)
+		TeaUpdate(m, key)
+		assert.Equal(t, strings.Join([]string{
+			filepath.Join("sub", "file1.txt"), filepath.Join("sub", "file2.txt"),
+		}, "\n"), copiedText)
+	})
+
+	t.Run("Outside Git Repo Does Nothing", func(t *testing.T) {
+		m := newModel(plain)
+		setFilePanelSelectedItemByLocation(t, m.getFocusedFilePanel(), plainFile)
+		TeaUpdate(m, key)
+		assert.Empty(t, copiedText)
+	})
+}

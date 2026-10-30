@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/yorukot/superfile/src/pkg/gitinfo"
 	"github.com/yorukot/superfile/src/pkg/utils"
 )
 
@@ -92,6 +93,8 @@ func (m *Model) UpdateElementsIfNeeded(force bool, displayDotFile bool) {
 		m.element = m.getElements(displayDotFile)
 		// Update file panel list
 		m.LastTimeGetElement = nowTime
+		m.gitRoot, _ = gitinfo.FindRoot(m.Location)
+		m.gitBranch, _, _ = gitinfo.Branch(m.Location)
 
 		// For hover to file on first time loading
 		if m.TargetFile != "" {

@@ -41,6 +41,9 @@ type Model struct {
 	LastTimeGetElement time.Time
 	TargetFile         string             // filename to position cursor on after load
 	columns            []columnDefinition // columns for rendering
+	gitRoot            string             // root of the git repo containing Location, empty if none
+	gitBranch          string             // current branch (or short hash if detached), empty if unknown
+	gitAltView         bool               // top bar shows branch and repo-relative path instead of the plain path
 }
 
 // Record for directory navigation

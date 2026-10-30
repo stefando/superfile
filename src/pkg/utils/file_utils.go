@@ -196,6 +196,21 @@ func fixTomlFile(resultErr *TomlLoadError, filePath string, target interface{}) 
 	return resultErr
 }
 
+// ContractHome replaces a leading home directory in path with "~".
+// Paths outside home are returned unchanged.
+func ContractHome(path string, home string) string {
+	if home == "" {
+		return path
+	}
+	if path == home {
+		return "~"
+	}
+	if rest, ok := strings.CutPrefix(path, home+string(filepath.Separator)); ok {
+		return filepath.Join("~", rest)
+	}
+	return path
+}
+
 // If path is not absolute, then append to currentDir and get absolute path
 // Resolve paths starting with "~"
 // currentDir should be an absolute path

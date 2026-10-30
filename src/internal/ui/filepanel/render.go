@@ -5,11 +5,15 @@ import (
 	"path/filepath"
 	"strings"
 
+	"charm.land/lipgloss/v2"
+
+	variable "github.com/yorukot/superfile/src/config"
 	"github.com/yorukot/superfile/src/config/icon"
 	"github.com/yorukot/superfile/src/internal/common"
 	"github.com/yorukot/superfile/src/internal/ui"
 	"github.com/yorukot/superfile/src/internal/ui/rendering"
 	"github.com/yorukot/superfile/src/internal/ui/sortmodel"
+	"github.com/yorukot/superfile/src/pkg/utils"
 )
 
 /*
@@ -35,9 +39,42 @@ func (m *Model) Render(focused bool) string {
 
 func (m *Model) renderTopBar(r *rendering.Renderer) {
 	// TODO - Add ansitruncate left in renderer and remove truncation here
-	truncatedPath := common.TruncateTextBeginning(m.Location, m.GetContentWidth()-common.InnerPadding, "...")
-	r.AddLines(common.FilePanelTopDirectoryIcon + common.FilePanelTopPathStyle.Render(truncatedPath))
+	width := m.GetContentWidth() - common.InnerPadding
+	if m.gitViewActive() {
+		// Git view uses two lines: the branch, and the path relative to the repo root.
+		branch := m.gitMarker()
+		if m.gitBranch != "" {
+			branch += icon.Space + m.gitBranch
+		}
+		relPath := "."
+		if rel, err := filepath.Rel(m.gitRoot, m.Location); err == nil {
+			relPath = rel
+		}
+		r.AddLines(
+			common.FilePanelTopDirectoryIcon+common.FilePanelTopPathStyle.Render(
+				common.TruncateText(branch, width, "...")),
+			common.FilePanelTopPathStyle.Render(" "+common.TruncateTextBeginning(relPath, width, "...")),
+		)
+		r.AddSection()
+		return
+	}
+
+	path := utils.ContractHome(m.Location, variable.HomeDir)
+	suffix := ""
+	if m.gitRoot != "" {
+		suffix = " " + m.gitMarker()
+	}
+	truncatedPath := common.TruncateTextBeginning(path, width-lipgloss.Width(suffix), "...")
+	r.AddLines(common.FilePanelTopDirectoryIcon + common.FilePanelTopPathStyle.Render(truncatedPath) + suffix)
 	r.AddSection()
+}
+
+// gitMarker is the short indicator that the panel is inside a git repo.
+func (m *Model) gitMarker() string {
+	if common.Config.Nerdfont {
+		return icon.GitBranch
+	}
+	return "(git)"
 }
 
 func (m *Model) renderSearchBar(r *rendering.Renderer) {

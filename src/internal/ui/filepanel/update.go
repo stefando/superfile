@@ -9,6 +9,16 @@ import (
 	"github.com/yorukot/superfile/src/pkg/utils"
 )
 
+// ToggleGitView switches the top bar between the plain path and the branch with repo-relative path.
+// It does nothing outside a git repo.
+func (m *Model) ToggleGitView() {
+	if m.gitRoot != "" {
+		m.gitAltView = !m.gitAltView
+		// The number of visible elements changed
+		m.scrollToCursor(m.GetCursor())
+	}
+}
+
 func (m *Model) ChangeFilePanelMode() {
 	switch m.PanelMode {
 	case SelectMode:

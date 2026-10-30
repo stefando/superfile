@@ -239,6 +239,16 @@ func getData() []hotkeydata { //nolint: funlen // This should be self contained
 			hotkeyWorkType: globalType,
 		},
 		{
+			hotkey:         common.Hotkeys.CopyPathRelativeToGitRoot,
+			description:    "Copy current or selected paths relative to the git root",
+			hotkeyWorkType: globalType,
+		},
+		{
+			hotkey:         common.Hotkeys.ToggleGitView,
+			description:    "Toggle git view (branch and repo-relative path) in the panel top bar",
+			hotkeyWorkType: globalType,
+		},
+		{
 			hotkey:         common.Hotkeys.ExtractFile,
 			description:    "Extract compressed file",
 			hotkeyWorkType: normalType,

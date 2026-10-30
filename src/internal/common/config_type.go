@@ -169,6 +169,9 @@ type HotkeysType struct {
 	CopyPath []string `toml:"copy_path"`
 	CopyPWD  []string `toml:"copy_present_working_directory"`
 
+	CopyPathRelativeToGitRoot []string `toml:"copy_path_relative_to_git_root"`
+	ToggleGitView             []string `toml:"toggle_git_view"`
+
 	ToggleFooter []string `toml:"toggle_footer"`
 
 	ConfirmTyping []string `toml:"confirm_typing" comment:"=================================================================================================\nTyping hotkeys (can conflict with all hotkeys)"`
