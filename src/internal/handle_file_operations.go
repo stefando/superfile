@@ -598,16 +598,23 @@ func (m *model) copyPathRelativeToGitRoot() {
 	if panel.Empty() {
 		return
 	}
-	if _, ok := gitinfo.FindRoot(panel.Location); !ok {
+	root, ok := gitinfo.FindRoot(panel.Location)
+	if !ok {
 		slog.Debug("Not in a git repo, skipping relative path copy", "location", panel.Location)
 		return
 	}
 
-	paths := strings.Split(m.getSelectedOrFocusedPaths(panel), "\n")
+	paths := panel.GetSelectedLocationsSortedAsVisible()
+	if panel.SelectedCount() == 0 {
+		paths = []string{panel.GetFocusedItem().Location}
+	}
 	for i, p := range paths {
-		if rel, ok := gitinfo.RelToRoot(p); ok {
-			paths[i] = rel
+		rel, err := filepath.Rel(root, p)
+		if err != nil {
+			slog.Error("Error making path relative to git root", "path", p, "root", root, "error", err)
+			return
 		}
+		paths[i] = rel
 	}
 
 	if err := m.writeClipboard(strings.Join(paths, "\n")); err != nil {

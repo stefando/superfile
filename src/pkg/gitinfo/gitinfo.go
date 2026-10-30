@@ -2,6 +2,7 @@
 package gitinfo
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,6 +43,9 @@ const (
 	headRefPrefix = "ref: refs/heads/"
 	gitDirPrefix  = "gitdir:"
 	shortHashLen  = 7
+
+	// HEAD and gitdir pointers are small text files, even with long ref names or paths.
+	maxMetadataSize = 64 * 1024
 )
 
 // Branch returns the current branch name of the repo that contains path.
@@ -56,8 +60,8 @@ func Branch(path string) (string, bool, bool) {
 	if !found {
 		return "", false, false
 	}
-	data, err := os.ReadFile(filepath.Join(gitDir, "HEAD"))
-	if err != nil {
+	data, ok := readMetadata(filepath.Join(gitDir, "HEAD"))
+	if !ok {
 		return "", false, false
 	}
 	head := strings.TrimSpace(string(data))
@@ -81,8 +85,8 @@ func resolveGitDir(root string) (string, bool) {
 	if info.IsDir() {
 		return dotGit, true
 	}
-	data, err := os.ReadFile(dotGit)
-	if err != nil {
+	data, ok := readMetadata(dotGit)
+	if !ok {
 		return "", false
 	}
 	target, isGitDir := strings.CutPrefix(strings.TrimSpace(string(data)), gitDirPrefix)
@@ -94,4 +98,24 @@ func resolveGitDir(root string) (string, bool) {
 		target = filepath.Join(root, target)
 	}
 	return target, true
+}
+
+// readMetadata rejects special files before opening them: even opening a FIFO can block.
+// LimitReader also bounds the read if a regular file grows after the size check.
+func readMetadata(path string) ([]byte, bool) {
+	info, err := os.Stat(path)
+	if err != nil || !info.Mode().IsRegular() || info.Size() > maxMetadataSize {
+		return nil, false
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, false
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(io.LimitReader(file, maxMetadataSize+1))
+	if err != nil || len(data) > maxMetadataSize {
+		return nil, false
+	}
+	return data, true
 }

@@ -1,10 +1,13 @@
 package gitinfo
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/yorukot/superfile/src/pkg/utils"
 )
@@ -48,6 +51,67 @@ func TestFindRootAndRelToRoot(t *testing.T) {
 			rel, ok := RelToRoot(tt.path)
 			assert.Equal(t, tt.wantOk, ok)
 			assert.Equal(t, tt.wantRel, rel)
+		})
+	}
+}
+
+func TestReadMetadata(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		wantOK  bool
+	}{
+		{"empty", "", true},
+		{"normal", "ref: refs/heads/main\n", true},
+		{"at size limit", strings.Repeat("a", maxMetadataSize), true},
+		{"over size limit", strings.Repeat("a", maxMetadataSize+1), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "metadata")
+			require.NoError(t, os.WriteFile(path, []byte(tt.content), 0600))
+			data, ok := readMetadata(path)
+			assert.Equal(t, tt.wantOK, ok)
+			if tt.wantOK {
+				assert.Equal(t, tt.content, string(data))
+			} else {
+				assert.Nil(t, data)
+			}
+		})
+	}
+
+	t.Run("directory", func(t *testing.T) {
+		_, ok := readMetadata(t.TempDir())
+		assert.False(t, ok)
+	})
+	t.Run("missing", func(t *testing.T) {
+		_, ok := readMetadata(filepath.Join(t.TempDir(), "missing"))
+		assert.False(t, ok)
+	})
+}
+
+func TestBranchMetadataReadLimits(t *testing.T) {
+	for _, metadata := range []string{".git", "HEAD"} {
+		t.Run(metadata, func(t *testing.T) {
+			root := filepath.Join(t.TempDir(), "repo")
+			gitDir := filepath.Join(root, ".git")
+			if metadata == ".git" {
+				gitDir = filepath.Join(t.TempDir(), "gitdir")
+				utils.SetupDirectories(t, root)
+				utils.SetupFilesWithData(t,
+					[]byte("gitdir: "+gitDir+strings.Repeat("\n", maxMetadataSize)), filepath.Join(root, ".git"))
+			}
+			utils.SetupDirectories(t, gitDir)
+			head := "ref: refs/heads/main\n"
+			if metadata == "HEAD" {
+				head += strings.Repeat("\n", maxMetadataSize)
+			}
+			utils.SetupFilesWithData(t, []byte(head), filepath.Join(gitDir, "HEAD"))
+
+			name, detached, ok := Branch(root)
+			assert.Empty(t, name)
+			assert.False(t, detached)
+			assert.False(t, ok)
 		})
 	}
 }
